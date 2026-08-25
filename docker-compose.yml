@@ -1,0 +1,54 @@
+services:
+  vaultwarden:
+    # Official images don't have Key Connector support yet (dani-garcia/vaultwarden#7419
+    # is still open). This is acul021's fork: upstream main + that PR, rebased on updates.
+    # amd64 only. Pin a digest once you've settled on a version you trust, since ":testing"
+    # moves under you.
+    image: ghcr.io/acul021/vaultwarden:testing
+    container_name: vaultwarden
+    restart: unless-stopped
+    environment:
+      DOMAIN: "${DOMAIN}"
+
+      # --- SSO (Authentik) ---
+      SSO_ENABLED: "true"
+      # Once you've confirmed SSO login works end-to-end, flip this to true so the
+      # password login form disappears and everyone goes through Authentik.
+      SSO_ONLY: "false"
+      SSO_AUTHORITY: "${SSO_AUTHORITY}"
+      SSO_CLIENT_ID: "${SSO_CLIENT_ID}"
+      SSO_CLIENT_SECRET: "${SSO_CLIENT_SECRET}"
+      SSO_SCOPES: "email profile"
+      SSO_PKCE: "true"
+
+      # --- Key Connector ---
+      KEY_CONNECTOR_ENABLED: "true"
+      # Internal docker network address; the browser/client never talks to this URL
+      # directly, only Vaultwarden's server side does.
+      KEY_CONNECTOR_URL: "http://key-connector:8081"
+      KEY_CONNECTOR_ORG_NAME: "${KEY_CONNECTOR_ORG_NAME}"
+    volumes:
+      - ./data/vaultwarden:/data
+    ports:
+      # Bound to localhost: reachable only via your VPN box / reverse proxy, not the LAN/WAN directly.
+      - "127.0.0.1:8000:80"
+
+  key-connector:
+    build:
+      # Pinned to main (the repo's actual default branch). Not the dependabot branch
+      # you may see referenced elsewhere -- that's just an automated dependency-bump
+      # branch, not something to build infrastructure against.
+      context: https://github.com/acul021/key-connector.git#main
+    container_name: key-connector
+    restart: unless-stopped
+    environment:
+      KC_BIND_ADDR: "0.0.0.0:8081"
+      KC_DATABASE_URL: "sqlite:///data/keyconnector.db?mode=rwc"
+      # Vaultwarden publishes its own OIDC discovery doc under /identity -- key-connector
+      # validates the *Vaultwarden-issued* access token here, not Authentik's token.
+      KC_IDENTITY_AUTHORITY: "http://vaultwarden:80/identity"
+      KC_ENCRYPTION_KEY: "${KC_ENCRYPTION_KEY}"
+    volumes:
+      - ./data/key-connector:/data
+    depends_on:
+      - vaultwarden
