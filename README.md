@@ -92,6 +92,16 @@ Fill in:
 
 ## 3. Bring it up
 
+`key-connector`'s image runs as a non-root user (UID 10001). If Compose
+auto-creates `./data/key-connector` on first run, it'll be owned by root and
+the container won't be able to create its SQLite database (`unable to open
+database file`). Pre-create it with the right owner to skip that failure:
+
+```sh
+mkdir -p ./data/vaultwarden ./data/key-connector
+sudo chown 10001 ./data/key-connector
+```
+
 ```sh
 docker compose up -d --build
 ```
