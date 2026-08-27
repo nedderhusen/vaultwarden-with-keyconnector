@@ -55,11 +55,16 @@ Create an **OAuth2/OpenID Provider**, then a matching **Application**.
 **Provider** (Applications → Providers → Create → OAuth2/OpenID Provider):
 - Name: `vaultwarden`
 - Client type: `Confidential`
-- Redirect URIs / Origins (strict, one per line):
-  - `https://vault.example.internal/sso-connector.html` (web vault)
-  - `bitwarden://sso-callback` (desktop/mobile apps)
-  - `http://localhost:*` if you want the Bitwarden CLI to work too (regex
-    match, since the CLI picks a random local port)
+- Redirect URIs / Origins (strict), exactly one entry:
+  - `https://vault.example.internal/identity/connect/oidc-signin`
+
+  Vaultwarden itself is the only OIDC client Authentik ever sees -- it's the
+  one that authenticates to Authentik and completes the code exchange,
+  regardless of whether the user is on the web vault, desktop, mobile, or
+  CLI. Individual Bitwarden clients authenticate to *Vaultwarden's own*
+  `/identity/connect/authorize` endpoint separately (their redirect targets,
+  like `/sso-connector.html` or `bitwarden://sso-callback`, are handled
+  entirely inside Vaultwarden and never need to be registered in Authentik).
 - Signing key: any available RSA key
 - Scopes: `openid`, `email`, `profile` at minimum
 
