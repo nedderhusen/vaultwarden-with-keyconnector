@@ -105,9 +105,26 @@ Check both are healthy:
 
 ```sh
 docker compose logs -f vaultwarden key-connector
-curl http://127.0.0.1:8000/alive          # via the vaultwarden container, not exposed here
+curl http://127.0.0.1:8000/alive                       # from the LXC itself
 docker compose exec key-connector wget -qO- http://localhost:8081/alive
 ```
+
+If `key-connector` crash-loops with `502 Bad Gateway` fetching
+`${DOMAIN}/identity/.well-known/jwks`, that's not a Docker networking problem
+between the two containers -- Vaultwarden's OIDC discovery document reports
+`jwks_uri` as your **public** `DOMAIN`, so key-connector has to reach that
+same URL your reverse proxy serves, round-trip. Confirm the chain from
+outside the LXC:
+
+```sh
+curl -v https://your-domain/identity/.well-known/jwks
+```
+
+A `502` with your proxy's name in the `server:` header means the proxy
+matched the site but couldn't reach its upstream -- point it at this LXC's
+LAN IP on port 8000, and make sure `docker-compose.yml`'s port binding
+(`0.0.0.0:8000:80`) is reachable from wherever the proxy runs, not just from
+loopback on the LXC. Once that curl returns `200`, restart `key-connector`.
 
 ## 4. Verify the flow
 

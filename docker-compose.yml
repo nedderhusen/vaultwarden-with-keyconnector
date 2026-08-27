@@ -30,8 +30,10 @@ services:
     volumes:
       - ./data/vaultwarden:/data
     ports:
-      # Bound to localhost: reachable only via your VPN box / reverse proxy, not the LAN/WAN directly.
-      - "127.0.0.1:8000:80"
+      # Your reverse proxy (Caddy) runs on a separate host on the LAN, so this needs
+      # to be reachable from there -- not just loopback on this LXC. If Caddy and this
+      # LXC ever end up on the same host, tighten this back to 127.0.0.1:8000:80.
+      - "0.0.0.0:8000:80"
 
   key-connector:
     build:
