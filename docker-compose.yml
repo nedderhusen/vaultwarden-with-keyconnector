@@ -20,6 +20,14 @@ services:
       SSO_CLIENT_SECRET: "${SSO_CLIENT_SECRET}"
       SSO_SCOPES: "email profile"
       SSO_PKCE: "true"
+      # Authentik doesn't mark admin-created accounts' emails as verified (that
+      # normally only happens via an email-verification enrollment stage), so
+      # the email_verified claim comes back unset. Accepting that is a real
+      # trade-off (see the .env.template comment upstream) since combined with
+      # SSO_SIGNUPS_MATCH_EMAIL it could let an unverified IdP email hijack a
+      # matching Vaultwarden account -- acceptable here since every Authentik
+      # account is one you provisioned yourself, VPN-only.
+      SSO_ALLOW_UNKNOWN_EMAIL_VERIFICATION: "true"
 
       # --- Key Connector ---
       KEY_CONNECTOR_ENABLED: "true"
