@@ -18,7 +18,13 @@ services:
       SSO_AUTHORITY: "${SSO_AUTHORITY}"
       SSO_CLIENT_ID: "${SSO_CLIENT_ID}"
       SSO_CLIENT_SECRET: "${SSO_CLIENT_SECRET}"
-      SSO_SCOPES: "email profile"
+      # offline_access is required so Authentik actually issues a refresh
+      # token upstream -- without it, Vaultwarden's wrapped refresh token has
+      # nothing to refresh the embedded Authentik access token with, and any
+      # refresh attempt (which happens automatically, e.g. right after
+      # confirming Key Connector org enrollment) fails with invalid_grant and
+      # bounces the user back to the login screen.
+      SSO_SCOPES: "email profile offline_access"
       SSO_PKCE: "true"
       # Authentik doesn't mark admin-created accounts' emails as verified (that
       # normally only happens via an email-verification enrollment stage), so
